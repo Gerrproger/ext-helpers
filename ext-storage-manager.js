@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.0.0
+ * @version  v1.0.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -24,12 +24,12 @@
 
     const ExtStorageManager = function (defData, after, name) {
         class Storage {
-            constructor(name, defData, after) {
+            constructor(name = 'sync', defData = {}, after = () => { }) {
                 this.name = name;
                 this.after = after;
                 this.onUpdateCalls = [];
                 this.data = {};
-                this.defData = defData;
+                this.defData = defData || {};
                 this.skip = false;
                 this.api = {
                     get: this.get.bind(this),
@@ -151,12 +151,12 @@
 
             set(path, value) {
                 if (path && typeof path !== 'string') {
-                    throw new Error('Path shold be a string!')
-                };
+                    throw new Error('Path should be a string!')
+                }
                 this._isObject(value) && (value = this._copyObject(value));
                 if (!path) {
                     if (!this._isObject(value)) {
-                        throw new Error('Could not store a non-object in the storage!');
+                        throw new Error('Could not store a non-object in the storage root!');
                     }
                     this._replaceStorage(value);
                     return this.api;
@@ -176,11 +176,10 @@
                     }
                 });
                 if (error) {
-                    throw new Error('Could not store value in a non-object!');
-                } else {
-                    chrome.storage[this.name].set({ [pathArray[0]]: this.data[pathArray[0]] });
-                    return this.api;
+                    throw new Error('Provided path is not an object!');
                 }
+                chrome.storage[this.name].set({ [pathArray[0]]: this.data[pathArray[0]] });
+                return this.api;
             }
 
             remove(path) {
@@ -214,17 +213,15 @@
                 });
                 if (error) {
                     throw new Error('Provided path is not an object!');
-                } else {
-                    return this.api;
                 }
+                return this.api;
             }
 
             onUpdate(path, after) {
-                path = path || '';
                 if (!after) {
                     throw new Error('Function is not provided!');
                 }
-                this.onUpdateCalls.push([path, after]);
+                this.onUpdateCalls.push([path || '', after]);
                 return this.api;
             }
 
@@ -239,12 +236,7 @@
             }
         }
 
-        name = name || 'sync';
-        after = after || (() => { });
-        defData = defData || {};
-
-        const inst = new Storage(name, defData, after);
-        return inst.api;
+        return new Storage(name, defData, after).api;
     };
 
     return ExtStorageManager;
