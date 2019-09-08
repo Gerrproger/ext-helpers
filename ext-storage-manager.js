@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.0.1
+ * @version  v1.1.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -25,22 +25,32 @@
     const ExtStorageManager = function (defData, after, name) {
         class Storage {
             constructor(name = 'sync', defData = {}, after = () => { }) {
+                const checkInit = function () {
+                    if (!this.initialized) {
+                        throw new StorageError('Storage is not initialized yet!');
+                    }
+                    return arguments[0].apply(this, Array.prototype.slice.call(arguments, 1));
+                };
                 this.name = name;
                 this.after = after;
                 this.onUpdateCalls = [];
                 this.data = {};
                 this.defData = defData || {};
                 this.skip = false;
+                this.initialized = false;
+                this.nativeStorage = chrome.storage[name];
                 this.api = {
-                    get: this.get.bind(this),
-                    set: this.set.bind(this),
-                    remove: this.remove.bind(this),
+                    get: checkInit.bind(this, this.get),
+                    set: checkInit.bind(this, this.set),
+                    remove: checkInit.bind(this, this.remove),
+                    reset: checkInit.bind(this, this.reset),
+                    clear: checkInit.bind(this, this.clear),
                     onUpdate: this.onUpdate.bind(this),
-                    reset: this.reset.bind(this),
-                    clear: this.clear.bind(this)
+                    getBytesInUse: this.getBytesInUse.bind(this),
+                    limits: this.limits
                 };
-                chrome.storage[name].get(this._checkStorage.bind(this));
-                chrome.storage.onChanged.addListener(this._updateStorage.bind(this));
+                this.nativeStorage.get(this._checkStorage.bind(this));
+                this.nativeStorage.onChanged.addListener(this._updateStorage.bind(this));
             }
 
             _checkStorage(opts) {
@@ -51,9 +61,10 @@
                     merge.changed.forEach((key) => {
                         changed[key] = this.data[key];
                     });
-                    chrome.storage[this.name].set(changed);
+                    this.nativeStorage.set(changed);
                 }
-                this.after(this.get());
+                this.initialized = true;
+                this.after.call(window, this.get());
             }
 
             _isObject(v) {
@@ -89,8 +100,8 @@
                 };
             }
 
-            _updateStorage(opts, area) {
-                if (area !== this.name || this.skip) {
+            _updateStorage(opts) {
+                if (this.skip) {
                     return;
                 }
                 const changed = [];
@@ -118,8 +129,8 @@
                 });
                 changed.forEach((path) => {
                     this.onUpdateCalls.forEach((caller) => {
-                        if (new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])) {
-                            caller[1](this.get(caller[0]));
+                        if (new RegExp(`^${caller[0].replace(/\./g, '\\.')}`).test(path) || new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])) {
+                            caller[1].call(window, this.get(caller[0]));
                         }
                     })
                 });
@@ -130,8 +141,8 @@
                 const toRemove = Object.keys(this.data).filter(key => !newData.hasOwnProperty(key));
                 this.data = newData;
                 this.skip = true;
-                toRemove.length && chrome.storage[this.name].remove(toRemove);
-                chrome.storage[this.name].set(this.data, () => this.skip = false);
+                toRemove.length && this.nativeStorage.remove(toRemove);
+                this.nativeStorage.set(this.data, () => this.skip = false);
             }
 
             get(path) {
@@ -151,12 +162,12 @@
 
             set(path, value) {
                 if (path && typeof path !== 'string') {
-                    throw new Error('Path should be a string!')
+                    throw new StorageError('Path should be a string!');
                 }
                 this._isObject(value) && (value = this._copyObject(value));
                 if (!path) {
                     if (!this._isObject(value)) {
-                        throw new Error('Could not store a non-object in the storage root!');
+                        throw new StorageError('Could not store a non-object in the storage root!');
                     }
                     this._replaceStorage(value);
                     return this.api;
@@ -176,24 +187,24 @@
                     }
                 });
                 if (error) {
-                    throw new Error('Provided path is not an object!');
+                    throw new StorageError('Passed path is not an object!');
                 }
-                chrome.storage[this.name].set({ [pathArray[0]]: this.data[pathArray[0]] });
+                this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] });
                 return this.api;
             }
 
             remove(path) {
                 if (!path) {
-                    throw new Error('Path is not provided!');
+                    throw new StorageError('Path is not passed!');
                 }
                 const pathArray = path.split(/\./g);
                 const pathLength = pathArray.length - 1;
                 if (!pathLength) {
                     if (!this.data[pathArray[0]]) {
-                        throw new Error('Provided path is invalid!');
+                        throw new StorageError('Passed path is invalid!');
                     }
                     delete this.data[pathArray[0]];
-                    chrome.storage[this.name].remove(pathArray[0]);
+                    this.nativeStorage.remove(pathArray[0]);
                     return this.api;
                 }
                 let temp = this.data;
@@ -203,7 +214,7 @@
                             return true;
                         } else {
                             delete temp[key];
-                            chrome.storage[this.name].set({ [pathArray[0]]: this.data[pathArray[0]] });
+                            this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] });
                         }
                     } else if (this._isObject(temp[key])) {
                         temp = temp[key];
@@ -212,14 +223,17 @@
                     }
                 });
                 if (error) {
-                    throw new Error('Provided path is not an object!');
+                    throw new StorageError('Passed path is not an object!');
                 }
                 return this.api;
             }
 
             onUpdate(path, after) {
-                if (!after) {
-                    throw new Error('Function is not provided!');
+                if (typeof path === 'function') {
+                    after = path;
+                    path = null;
+                } else if (typeof after !== 'function') {
+                    throw new StorageError('Callback function is not passed!');
                 }
                 this.onUpdateCalls.push([path || '', after]);
                 return this.api;
@@ -233,6 +247,39 @@
             clear() {
                 this._replaceStorage({});
                 return this.api;
+            }
+
+            getBytesInUse(key, after) {
+                if (typeof key === 'function') {
+                    after = key;
+                    key = null;
+                } else if (typeof after !== 'function') {
+                    throw new StorageError('Callback function is not passed!');
+                }
+                this.nativeStorage.getBytesInUse(key || null, (bytes) => {
+                    const limit = this.nativeStorage[`QUOTA_BYTES${key ? '_PER_ITEM' : ''}`];
+                    after.call(window, bytes, limit)
+                });
+                return this.api;
+            }
+
+            get limits() {
+                return {
+                    maxItems: this.nativeStorage.MAX_ITEMS,
+                    maxSustainedWriteOperationsPerMinute: this.nativeStorage.MAX_SUSTAINED_WRITE_OPERATIONS_PER_MINUTE,
+                    maxWriteOperationsPerHour: this.nativeStorage.MAX_WRITE_OPERATIONS_PER_HOUR,
+                    maxWriteOperationsPerMinute: this.nativeStorage.MAX_WRITE_OPERATIONS_PER_MINUTE,
+                    quotaBytes: this.nativeStorage.QUOTA_BYTES,
+                    quotaBytesPerItem: this.nativeStorage.QUOTA_BYTES_PER_ITEM,
+                };
+            }
+        }
+
+        class StorageError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'ExtStorageManagerError';
+                this.stack = this.stack.replace(/\s\s\s\sat Storage.+(\n|$)/g, '');
             }
         }
 
