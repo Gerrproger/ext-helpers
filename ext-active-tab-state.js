@@ -1,7 +1,7 @@
 /*!
  * ExtActiveTabState
  * Part of the ExtHelpers project
- * @version  v1.3.0
+ * @version  v1.3.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers

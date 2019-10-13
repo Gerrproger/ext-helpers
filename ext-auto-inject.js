@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.3.0
+ * @version  v1.3.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -56,7 +56,7 @@
                 };
 
                 chrome.tabs.executeScript(id, {
-                    code: `window.extAutoInjectData = ${JSON.stringify(infoRes)};`
+                    code: `window.extAutoInjectInfo = ${JSON.stringify(this.constructor.info)};`
                 }, () => {
                     if (chrome.runtime.lastError) {
                         switch (chrome.runtime.lastError.message) {
@@ -126,19 +126,19 @@
                 });
             };
 
-            let infoRes = null;
             let ignoring = (typeof ignore === 'object' || typeof ignore === 'string') ? (Array.isArray(ignore) ? ignore : [ignore]) : [];
             ignoring = ignoring.map((ignore) => {
                 return typeof ignore === 'string' ? constructRegExp(ignore) : ignore;
             });
 
             chrome.runtime.onInstalled.addListener((details) => {
-                infoRes = {
+                window.extAutoInjectInfo = {
                     version: this.manifest.version,
                     previousVersion: details.previousVersion,
-                    reason: details.reason
+                    reason: details.reason,
+                    date: new Date()
                 };
-                callback(infoRes);
+                callback(this.constructor.info);
                 ignore !== false && queryTabs();
             });
         }
@@ -149,13 +149,18 @@
                     return;
                 }
                 window.removeEventListener('message', catchMessage);
-                callback();
+                window.extAutoInjectInfo = event.data.extAutoInjected;
+                callback(this.constructor.info);
             };
 
-            window.postMessage({ extAutoInjected: true }, '*');
+            window.postMessage({ extAutoInjected: this.constructor.info }, '*');
             setTimeout(() => {
                 window.addEventListener('message', catchMessage);
             });
+        }
+
+        static get info() {
+            return window.extAutoInjectInfo;
         }
     }
 
