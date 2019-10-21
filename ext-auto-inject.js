@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.3.1
+ * @version  v1.4.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -38,11 +38,11 @@
                     callback && callback.call(window, res);
                     resolve(res);
                 };
-                this.isBackgroundScript ? this.background(ignore, callbackWrap) : this.content(callbackWrap);
+                this.isBackgroundScript ? this._background(ignore, callbackWrap) : this._content(callbackWrap);
             });
         }
 
-        background(ignore, callback) {
+        _background(ignore, callback) {
             const constructRegExp = str => new RegExp(`^${str.replace(/\?/g, '.').replace(/\*\.?/g, '.*').replace(/\//g, '\/').replace(/\./g, '\.')}$`);
             const inject = (id, injectOpts) => {
                 const doInject = (type) => {
@@ -143,7 +143,7 @@
             });
         }
 
-        content(callback) {
+        _content(callback) {
             const catchMessage = (event) => {
                 if (event.source !== window || !event.data.extAutoInjected) {
                     return;

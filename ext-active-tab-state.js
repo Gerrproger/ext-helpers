@@ -1,7 +1,7 @@
 /*!
  * ExtActiveTabState
  * Part of the ExtHelpers project
- * @version  v1.3.1
+ * @version  v1.4.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -23,26 +23,61 @@
     "use strict";
 
     class ExtActiveTabState {
-        constructor(callback, namespace) {
+        constructor() {
             this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
-            if (callback || namespace) {
-                this.checkParams(callback, namespace);
-            }
-            return this.checkParams.bind(this);
+            this.callbacksNoState = [];
+            this.callbacks = {
+                default: []
+            };
+            this.api = {
+                subscribe: this.subscribe.bind(this),
+                unsubscribe: this.unsubscribe.bind(this)
+            };
+            this.isBackgroundScript ? this._initBackground() : this._initContent();
+            return this.api;
         }
 
-        checkParams(callback, namespace) {
-            if (typeof callback !== 'function' && this.isBackgroundScript) {
+        subscribe(callback, namespace) {
+            return this._processSubscriptions('subscribe', namespace, callback);
+        }
+
+        unsubscribe(namespace) {
+            return this._processSubscriptions('unsubscribe', namespace);
+        }
+
+        _processSubscriptions(type, namespace, callback) {
+            if (type === 'subscribe' && typeof callback !== 'function' && this.isBackgroundScript) {
                 throw new Error('Callback should be a function!');
             }
             if (namespace && typeof namespace !== 'string' && (!this.isBackgroundScript || typeof namespace !== 'boolean')) {
                 throw new Error(`Namespace should be a string${this.isBackgroundScript ? ' or a a boolean' : ''}!`);
             }
-            this.isBackgroundScript ? this.background(callback, namespace) : this.content(callback, namespace);
-            return this.checkParams.bind(this);
+
+            if (!namespace && this.isBackgroundScript) {
+                if (type === 'subscribe') {
+                    this.callbacksNoState.push(callback);
+                    window.dispatchEvent(new CustomEvent('checkTab'));
+                } else {
+                    this.callbacksNoState = [];
+                }
+                return this.api;
+            }
+
+            namespace = typeof namespace === 'string' ? namespace : 'default';
+            if (type === 'subscribe') {
+                if (this.callbacks[namespace]) {
+                    this.callbacks[namespace].push(callback);
+                } else {
+                    this.callbacks[namespace] = [callback];
+                }
+                window.dispatchEvent(new CustomEvent('checkTab'));
+            } else {
+                this.callbacks[namespace] && (this.callbacks[namespace] = []);
+            }
+            return this.api;
         }
 
-        background(callback, namespace) {
+        _initBackground() {
             let lastTabId = null;
             let lastWindId = null;
             const checkTab = () => {
@@ -56,34 +91,38 @@
                         return;
                     }
                     lastTabId = tab.id;
-                    if (namespace) {
-                        requestState(tab);
-                        return;
-                    }
-                    callback.call(window, tab);
+                    processCallbacks(tab);
                 });
             };
             const checkUpdate = (tabId, info, tab) => {
                 if (info.status !== 'complete' || tab.windowId !== lastWindId || !tab.active) {
                     return;
                 }
-                if (namespace) {
-                    requestState(tab);
-                    return;
-                }
-                callback.call(window, tab);
+                processCallbacks(tab);
             };
-            const requestState = (tab) => {
-                chrome.tabs.sendMessage(tab.id, { extActiveTabState: { namespace: typeof namespace === 'string' ? namespace : undefined } }, (response) => {
+            const processCallbacks = (tab) => {
+                Object.keys(this.callbacks).forEach((namespace) => {
+                    requestState(tab, namespace, (response) => {
+                        this.callbacks[namespace].forEach((callback) => {
+                            callback.call(window, tab, response);
+                        });
+                    });
+                });
+                this.callbacksNoState.forEach((callback) => {
+                    callback.call(window, tab);
+                });
+            };
+            const requestState = (tab, namespace, then) => {
+                chrome.tabs.sendMessage(tab.id, { extActiveTabState: { namespace: namespace } }, (response) => {
                     if (chrome.runtime.lastError) {
-                        callback.call(window, tab);
+                        then();
                         switch (chrome.runtime.lastError.message) {
                             case 'Could not establish connection. Receiving end does not exist.':
                             case 'The message port closed before a response was received.': return;
                             default: throw new Error(chrome.runtime.lastError.message);
                         }
                     }
-                    callback.call(window, tab, response.extActiveTabState.response);
+                    then(response.extActiveTabState.response);
                 });
             };
 
@@ -91,6 +130,10 @@
             chrome.tabs.onActivated.addListener(checkTab);
             chrome.windows.onFocusChanged.addListener(checkTab);
             chrome.tabs.onUpdated.addListener(checkUpdate);
+            window.addEventListener('checkTab', () => {
+                lastTabId = null;
+                checkTab();
+            });
             chrome.tabs.onCreated.addListener((tab) => {
                 if (!tab.active) {
                     return;
@@ -99,12 +142,19 @@
             });
         }
 
-        content(callback, namespace) {
+        _initContent() {
             chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-                if (!request.extActiveTabState || (namespace && namespace !== request.extActiveTabState.namespace)) {
+                let namespace = 'default';
+                if (!request.extActiveTabState) {
                     return;
                 }
-                const response = typeof callback === 'function' ? callback.call(window, request.extActiveTabState.namespace) : callback;
+                request.extActiveTabState.namespace && (namespace = request.extActiveTabState.namespace);
+
+                const response = this.callbacks[namespace] ? this.callbacks[namespace].reduce((resp, callback) => {
+                    const curr = typeof callback === 'function' ? callback.call(window) : callback;
+                    return Object.assign(resp, curr);
+                }, {}) : {};
+
                 sendResponse({ extActiveTabState: { response } });
                 return true;
             });
