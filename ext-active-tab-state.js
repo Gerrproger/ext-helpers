@@ -1,7 +1,7 @@
 /*!
  * ExtActiveTabState
  * Part of the ExtHelpers project
- * @version  v1.4.0
+ * @version  v1.4.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -10,9 +10,9 @@
 ; (function (root, factory) {
     "use strict";
 
-    if (typeof module === 'object' && typeof module.exports === 'object') {
+    if(typeof module === 'object' && typeof module.exports === 'object') {
         module.exports = factory(root, document);
-    } else if (typeof define === 'function' && define.amd) {
+    } else if(typeof define === 'function' && define.amd) {
         define(null, function () {
             factory(root, document);
         });
@@ -46,34 +46,34 @@
         }
 
         _processSubscriptions(type, namespace, callback) {
-            if (type === 'subscribe' && typeof callback !== 'function' && this.isBackgroundScript) {
+            if(type === 'subscribe' && typeof callback !== 'function' && this.isBackgroundScript) {
                 throw new Error('Callback should be a function!');
             }
-            if (namespace && typeof namespace !== 'string' && (!this.isBackgroundScript || typeof namespace !== 'boolean')) {
+            if(namespace && typeof namespace !== 'string' && (!this.isBackgroundScript || typeof namespace !== 'boolean')) {
                 throw new Error(`Namespace should be a string${this.isBackgroundScript ? ' or a a boolean' : ''}!`);
             }
 
-            if (!namespace && this.isBackgroundScript) {
-                if (type === 'subscribe') {
+            if(!namespace && this.isBackgroundScript) {
+                if(type === 'subscribe') {
                     this.callbacksNoState.push(callback);
                     window.dispatchEvent(new CustomEvent('checkTab'));
-                } else {
-                    this.callbacksNoState = [];
+                    return this.api;
                 }
+                this.callbacksNoState = [];
                 return this.api;
             }
 
             namespace = typeof namespace === 'string' ? namespace : 'default';
-            if (type === 'subscribe') {
-                if (this.callbacks[namespace]) {
+            if(type === 'subscribe') {
+                if(this.callbacks[namespace]) {
                     this.callbacks[namespace].push(callback);
                 } else {
                     this.callbacks[namespace] = [callback];
                 }
                 window.dispatchEvent(new CustomEvent('checkTab'));
-            } else {
-                this.callbacks[namespace] && (this.callbacks[namespace] = []);
+                return this.api;
             }
+            this.callbacks[namespace] && (this.callbacks[namespace] = []);
             return this.api;
         }
 
@@ -83,11 +83,11 @@
             const checkTab = () => {
                 chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
                     const tab = tabs[0];
-                    if (!tab) {
+                    if(!tab) {
                         return;
                     }
                     lastWindId = tab.windowId;
-                    if (tab.id === lastTabId) {
+                    if(tab.id === lastTabId) {
                         return;
                     }
                     lastTabId = tab.id;
@@ -95,7 +95,7 @@
                 });
             };
             const checkUpdate = (tabId, info, tab) => {
-                if (info.status !== 'complete' || tab.windowId !== lastWindId || !tab.active) {
+                if(info.status !== 'complete' || tab.windowId !== lastWindId || !tab.active) {
                     return;
                 }
                 processCallbacks(tab);
@@ -114,9 +114,9 @@
             };
             const requestState = (tab, namespace, then) => {
                 chrome.tabs.sendMessage(tab.id, { extActiveTabState: { namespace: namespace } }, (response) => {
-                    if (chrome.runtime.lastError) {
+                    if(chrome.runtime.lastError) {
                         then();
-                        switch (chrome.runtime.lastError.message) {
+                        switch(chrome.runtime.lastError.message) {
                             case 'Could not establish connection. Receiving end does not exist.':
                             case 'The message port closed before a response was received.': return;
                             default: throw new Error(chrome.runtime.lastError.message);
@@ -135,7 +135,7 @@
                 checkTab();
             });
             chrome.tabs.onCreated.addListener((tab) => {
-                if (!tab.active) {
+                if(!tab.active) {
                     return;
                 }
                 lastTabId = tab.id;
@@ -145,7 +145,7 @@
         _initContent() {
             chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let namespace = 'default';
-                if (!request.extActiveTabState) {
+                if(!request.extActiveTabState) {
                     return;
                 }
                 request.extActiveTabState.namespace && (namespace = request.extActiveTabState.namespace);

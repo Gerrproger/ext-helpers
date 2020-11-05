@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.4.0
+ * @version  v1.4.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -10,9 +10,9 @@
 ; (function (root, factory) {
     "use strict";
 
-    if (typeof module === 'object' && typeof module.exports === 'object') {
+    if(typeof module === 'object' && typeof module.exports === 'object') {
         module.exports = factory(root, document);
-    } else if (typeof define === 'function' && define.amd) {
+    } else if(typeof define === 'function' && define.amd) {
         define(null, function () {
             factory(root, document);
         });
@@ -27,10 +27,10 @@
             this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
             this.manifest = chrome.runtime.getManifest();
             !this.isBackgroundScript && (callback = ignore);
-            if (callback && typeof callback !== 'function') {
+            if(callback && typeof callback !== 'function') {
                 throw new Error('Callback should be a function!');
             }
-            if (this.isBackgroundScript && ignore && typeof ignore !== 'string' && typeof ignore !== 'object') {
+            if(this.isBackgroundScript && ignore && typeof ignore !== 'string' && typeof ignore !== 'object') {
                 throw new Error('Ignore parameter should be a sting (match pattern) or a regular expression or an array of strings/expressions!');
             }
             return new Promise((resolve) => {
@@ -58,9 +58,10 @@
                 chrome.tabs.executeScript(id, {
                     code: `window.extAutoInjectInfo = ${JSON.stringify(this.constructor.info)};`
                 }, () => {
-                    if (chrome.runtime.lastError) {
-                        switch (chrome.runtime.lastError.message) {
-                            case 'The extensions gallery cannot be scripted.': return;
+                    if(chrome.runtime.lastError) {
+                        switch(chrome.runtime.lastError.message) {
+                            case 'Cannot access contents of the page. Extension manifest must request permission to access the respective host.':
+                            case 'The extensions gallery cannot be scripted.':
                             case 'The tab was closed.': return;
                             default: throw new Error(chrome.runtime.lastError.message);
                         }
@@ -78,7 +79,7 @@
                 const doCheck = (type) => {
                     injectOpts.files[type] = cs[type].filter((fileName) => {
                         const isIgnored = ignoring.some((ignore) => {
-                            if (fileName.match(ignore)) {
+                            if(fileName.match(ignore)) {
                                 return true;
                             }
                         });
@@ -100,22 +101,22 @@
                             cs.exclude_globs && (toIgnore = toIgnore.concat(cs.exclude_globs));
                             const ignored = toIgnore.some((ignore) => {
                                 ignore = constructRegExp(ignore);
-                                if (tab.url.match(ignore)) {
+                                if(tab.url.match(ignore)) {
                                     return true;
                                 }
                             });
-                            if (ignored) {
+                            if(ignored) {
                                 return;
                             }
 
-                            if (cs.include_globs) {
+                            if(cs.include_globs) {
                                 const included = cs.include_globs.some((include) => {
                                     include = constructRegExp(include);
-                                    if (tab.url.match(include)) {
+                                    if(tab.url.match(include)) {
                                         return true;
                                     }
                                 });
-                                if (!included) {
+                                if(!included) {
                                     return;
                                 }
                             }
@@ -125,6 +126,16 @@
                     });
                 });
             };
+            const triggerInject = (reason, previousVersion) => {
+                window.extAutoInjectInfo = {
+                    date: new Date(),
+                    version: this.manifest.version,
+                    previousVersion,
+                    reason
+                };
+                previousVersion && callback(this.constructor.info);
+                ignore !== false && queryTabs();
+            };
 
             let ignoring = (typeof ignore === 'object' || typeof ignore === 'string') ? (Array.isArray(ignore) ? ignore : [ignore]) : [];
             ignoring = ignoring.map((ignore) => {
@@ -132,20 +143,17 @@
             });
 
             chrome.runtime.onInstalled.addListener((details) => {
-                window.extAutoInjectInfo = {
-                    version: this.manifest.version,
-                    previousVersion: details.previousVersion,
-                    reason: details.reason,
-                    date: new Date()
-                };
-                callback(this.constructor.info);
-                ignore !== false && queryTabs();
+                triggerInject(details.reason, details.previousVersion);
             });
+
+            setTimeout(() => {
+                !this.constructor.info && triggerInject('enabled');
+            }, 1000);
         }
 
         _content(callback) {
             const catchMessage = (event) => {
-                if (event.source !== window || !event.data.extAutoInjected) {
+                if(event.source !== window || !event.data.extAutoInjected) {
                     return;
                 }
                 window.removeEventListener('message', catchMessage);

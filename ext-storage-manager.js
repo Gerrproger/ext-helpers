@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.4.0
+ * @version  v1.4.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -10,9 +10,9 @@
 ; (function (root, factory) {
     "use strict";
 
-    if (typeof module === 'object' && typeof module.exports === 'object') {
+    if(typeof module === 'object' && typeof module.exports === 'object') {
         module.exports = factory(root, document);
-    } else if (typeof define === 'function' && define.amd) {
+    } else if(typeof define === 'function' && define.amd) {
         define(null, function () {
             factory(root, document);
         });
@@ -26,7 +26,7 @@
         class Storage {
             constructor(name = 'sync', defData = {}, after = () => { }) {
                 const checkInit = function () {
-                    if (!this.initialized) {
+                    if(!this.initialized) {
                         throw new StorageError('Storage is not initialized yet!');
                     }
                     return arguments[0].apply(this, Array.prototype.slice.call(arguments, 1));
@@ -56,7 +56,7 @@
             _checkStorage(opts) {
                 const merge = this._extend(opts, this.defData);
                 this.data = merge.object;
-                if (merge.changed.length) {
+                if(merge.changed.length) {
                     const changed = {};
                     merge.changed.forEach((key) => {
                         changed[key] = this.data[key];
@@ -83,10 +83,10 @@
                 };
                 const iter = (o1, o2, parentKey) => {
                     Object.keys(o2).forEach((key) => {
-                        if (o1[key] === undefined) {
+                        if(o1[key] === undefined) {
                             o1[key] = o2[key];
                             addChanged(parentKey || key);
-                        } else if (this._isObject(o2[key])) {
+                        } else if(this._isObject(o2[key])) {
                             iter(o1[key], o2[key], parentKey || key);
                         }
                     });
@@ -101,35 +101,35 @@
             }
 
             _updateStorage(opts) {
-                if (this.skip) {
+                if(this.skip) {
                     return;
                 }
                 const changed = [];
                 const iter = (o1, o2, allKey) => {
                     Object.keys(o1).forEach((key) => {
-                        if (this._isObject(o1[key]) && this._isObject(o2[key])) {
+                        if(this._isObject(o1[key]) && this._isObject(o2[key])) {
                             iter(o1[key], o2[key], `${allKey}.${key}`);
-                        } else if (o1[key] !== o2[key]) {
+                        } else if(o1[key] !== o2[key]) {
                             changed.push(`${allKey}.${key}`);
                         }
                     });
                 };
                 Object.keys(opts).forEach((key) => {
-                    if (!opts[key].hasOwnProperty('newValue')) {
+                    if(!opts[key].hasOwnProperty('newValue')) {
                         delete this.data[key];
                         changed.push(key);
                         return;
                     }
-                    if (this._isObject(opts[key].newValue) && this._isObject(this.data[key])) {
+                    if(this._isObject(opts[key].newValue) && this._isObject(this.data[key])) {
                         iter(opts[key].newValue, this.data[key], key);
-                    } else if (opts[key].newValue !== this.data[key]) {
+                    } else if(opts[key].newValue !== this.data[key]) {
                         changed.push(key);
                     }
                     this.data[key] = opts[key].newValue;
                 });
                 changed.forEach((path) => {
                     this.onUpdateCalls.forEach((caller) => {
-                        if (new RegExp(`^${caller[0].replace(/\./g, '\\.')}`).test(path) || new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])) {
+                        if(new RegExp(`^${caller[0].replace(/\./g, '\\.')}`).test(path) || new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])) {
                             caller[1].call(window, this.get(caller[0]));
                         }
                     })
@@ -146,12 +146,12 @@
             }
 
             get(path) {
-                if (!path) {
+                if(!path) {
                     return this._copyObject(this.data);
                 }
                 let temp = this.data;
                 const notFound = path.split(/\./g).some((key) => {
-                    if (temp && temp[key]) {
+                    if(temp && temp[key]) {
                         temp = temp[key];
                     } else {
                         return true;
@@ -161,12 +161,12 @@
             }
 
             set(path, value) {
-                if (path && typeof path !== 'string') {
+                if(path && typeof path !== 'string') {
                     throw new StorageError('Path should be a string!');
                 }
                 this._isObject(value) && (value = this._copyObject(value));
-                if (!path) {
-                    if (!this._isObject(value)) {
+                if(!path) {
+                    if(!this._isObject(value)) {
                         throw new StorageError('Could not store a non-object in the storage root!');
                     }
                     this._replaceStorage(value);
@@ -176,17 +176,17 @@
                 const pathArray = path.split(/\./g);
                 const pathLength = pathArray.length - 1;
                 const error = pathArray.some((key, i) => {
-                    if (i === pathLength) {
+                    if(i === pathLength) {
                         temp[key] = value;
-                    } else if (temp[key] === undefined) {
+                    } else if(temp[key] === undefined) {
                         temp = temp[key] = {};
-                    } else if (this._isObject(temp[key])) {
+                    } else if(this._isObject(temp[key])) {
                         temp = temp[key];
                     } else {
                         return true;
                     }
                 });
-                if (error) {
+                if(error) {
                     throw new StorageError('Passed path is not an object!');
                 }
                 this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] });
@@ -194,13 +194,13 @@
             }
 
             remove(path) {
-                if (!path) {
+                if(!path) {
                     throw new StorageError('Path is not passed!');
                 }
                 const pathArray = path.split(/\./g);
                 const pathLength = pathArray.length - 1;
-                if (!pathLength) {
-                    if (!this.data[pathArray[0]]) {
+                if(!pathLength) {
+                    if(!this.data[pathArray[0]]) {
                         throw new StorageError('Passed path is invalid!');
                     }
                     delete this.data[pathArray[0]];
@@ -209,30 +209,30 @@
                 }
                 let temp = this.data;
                 const error = pathArray.some((key, i) => {
-                    if (i === pathLength) {
-                        if (!this._isObject(temp[key])) {
+                    if(i === pathLength) {
+                        if(!this._isObject(temp[key])) {
                             return true;
                         } else {
                             delete temp[key];
                             this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] });
                         }
-                    } else if (this._isObject(temp[key])) {
+                    } else if(this._isObject(temp[key])) {
                         temp = temp[key];
                     } else {
                         return true;
                     }
                 });
-                if (error) {
+                if(error) {
                     throw new StorageError('Passed path is not an object!');
                 }
                 return this.api;
             }
 
             onUpdate(path, after) {
-                if (typeof path === 'function') {
+                if(typeof path === 'function') {
                     after = path;
                     path = null;
-                } else if (typeof after !== 'function') {
+                } else if(typeof after !== 'function') {
                     throw new StorageError('Callback function is not passed!');
                 }
                 this.onUpdateCalls.push([path || '', after]);
@@ -250,10 +250,10 @@
             }
 
             getBytesInUse(key, after) {
-                if (typeof key === 'function') {
+                if(typeof key === 'function') {
                     after = key;
                     key = null;
-                } else if (typeof after !== 'function') {
+                } else if(typeof after !== 'function') {
                     throw new StorageError('Callback function is not passed!');
                 }
                 this.nativeStorage.getBytesInUse(key || null, (bytes) => {
