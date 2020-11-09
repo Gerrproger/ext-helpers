@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.4.1
+ * @version  v1.4.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -46,6 +46,9 @@
             const constructRegExp = str => new RegExp(`^${str.replace(/\?/g, '.').replace(/\*\.?/g, '.*').replace(/\//g, '\/').replace(/\./g, '\.')}$`);
             const inject = (id, injectOpts) => {
                 const doInject = (type) => {
+                    if(!injectOpts.files[type]) {
+                        return;
+                    }
                     injectOpts.files[type].forEach((fileName) => {
                         chrome.tabs[type === 'js' ? 'executeScript' : 'insertCSS'](id, {
                             file: fileName,
@@ -77,6 +80,9 @@
                     files: {}
                 };
                 const doCheck = (type) => {
+                    if(!Array.isArray(cs[type])) {
+                        return;
+                    }
                     injectOpts.files[type] = cs[type].filter((fileName) => {
                         const isIgnored = ignoring.some((ignore) => {
                             if(fileName.match(ignore)) {
