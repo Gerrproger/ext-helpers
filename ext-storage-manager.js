@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.4.2
+ * @version  v1.4.3
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -151,7 +151,7 @@
                 }
                 let temp = this.data;
                 const notFound = path.split(/\./g).some((key) => {
-                    if(temp && temp[key]) {
+                    if(temp && temp[key] !== undefined) {
                         temp = temp[key];
                     } else {
                         return true;
