@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.4.3
+ * @version  v1.5.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
