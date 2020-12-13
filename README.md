@@ -51,7 +51,7 @@ Or in `manifest.json`:
 ```
 Then:
 ```js
-const storage = ExtStorageManager({}, init);
+const storage = new ExtStorageManager({}, init);
 ```
 
 ## [ExtStorageManager](docs/ext-storage-manager.md)
