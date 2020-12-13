@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.5.0
+ * @version  v1.5.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -22,9 +22,9 @@
 }(typeof window !== 'undefined' ? window : this, function (window, document) {
     "use strict";
 
-    const ExtStorageManager = function (defData, after, name) {
+    const ExtStorageManager = function (defData, callback, name) {
         class Storage {
-            constructor(name = 'sync', defData = {}, after = () => { }) {
+            constructor(name = 'sync', defData = {}, callback = () => { }) {
                 const checkInit = function () {
                     if(!this.initialized) {
                         throw new StorageError('Storage is not initialized yet!');
@@ -32,7 +32,7 @@
                     return arguments[0].apply(this, Array.prototype.slice.call(arguments, 1));
                 };
                 this.name = name;
-                this.after = after;
+                this.callback = callback;
                 this.onUpdateCalls = [];
                 this.data = {};
                 this.defData = defData || {};
@@ -64,7 +64,7 @@
                     this.nativeStorage.set(changed);
                 }
                 this.initialized = true;
-                this.after.call(window, this.get());
+                this.callback.call(window, this.get());
             }
 
             _isObject(v) {
@@ -228,14 +228,14 @@
                 return this.api;
             }
 
-            onUpdate(path, after) {
+            onUpdate(path, callback) {
                 if(typeof path === 'function') {
-                    after = path;
+                    callback = path;
                     path = null;
-                } else if(typeof after !== 'function') {
+                } else if(typeof callback !== 'function') {
                     throw new StorageError('Callback function is not passed!');
                 }
-                this.onUpdateCalls.push([path || '', after]);
+                this.onUpdateCalls.push([path || '', callback]);
                 return this.api;
             }
 
@@ -249,16 +249,16 @@
                 return this.api;
             }
 
-            getBytesInUse(key, after) {
+            getBytesInUse(key, callback) {
                 if(typeof key === 'function') {
-                    after = key;
+                    callback = key;
                     key = null;
-                } else if(typeof after !== 'function') {
+                } else if(typeof callback !== 'function') {
                     throw new StorageError('Callback function is not passed!');
                 }
                 this.nativeStorage.getBytesInUse(key || null, (bytes) => {
                     const limit = this.nativeStorage[`QUOTA_BYTES${key ? '_PER_ITEM' : ''}`];
-                    after.call(window, bytes, limit)
+                    callback.call(window, bytes, limit)
                 });
                 return this.api;
             }
@@ -283,7 +283,7 @@
             }
         }
 
-        return new Storage(name, defData, after).api;
+        return new Storage(name, defData, callback).api;
     };
 
     return ExtStorageManager;

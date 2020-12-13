@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.5.0
+ * @version  v1.5.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -170,7 +170,7 @@
             window.postMessage({ extAutoInjected: this.constructor.info }, '*');
             setTimeout(() => {
                 window.addEventListener('message', catchMessage);
-            });
+            }, 0);
         }
 
         static get info() {

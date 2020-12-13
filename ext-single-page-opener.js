@@ -2,7 +2,7 @@
 /*!
  * ExtSinglePageOpener
  * Part of the ExtHelpers project
- * @version  v1.5.0
+ * @version  v1.5.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -26,7 +26,6 @@
   class ExtSinglePageOpener {
     constructor() {
       this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
-      this.manifest = chrome.runtime.getManifest();
       this.pages = new Map();
 
       this.isBackgroundScript && this._prepareBackground();
@@ -37,7 +36,7 @@
         if(!request.extSinglePageOpener) {
           return;
         }
-        this.open(request.extSinglePageOpener, sendResponse);
+        this._openBackground(request.extSinglePageOpener, sendResponse);
         return true;
       });
     }
@@ -72,7 +71,7 @@
         if(chrome.runtime.lastError || !tab) {
           throw new Error('ExtSinglePageOpener should also be initilized in the background page script!');
         }
-        callback(tab);
+        callback.call(window, tab);
       });
     }
 
@@ -80,7 +79,7 @@
       const url = this._getUrl(opts);
       const tabLoaded = (tab) => {
         this.pages.set(this._splitUrl(url)[0], tab.id);
-        callback(tab);
+        callback.call(window, tab);
       };
 
       if(opts.type) {
