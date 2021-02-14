@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.5.1
+ * @version  v1.5.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -65,6 +65,7 @@
                         switch(chrome.runtime.lastError.message) {
                             case 'Cannot access contents of the page. Extension manifest must request permission to access the respective host.':
                             case 'The extensions gallery cannot be scripted.':
+                            case 'The frame was removed.':
                             case 'The tab was closed.': return;
                             default: throw new Error(chrome.runtime.lastError.message);
                         }
