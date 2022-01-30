@@ -1,27 +1,26 @@
-
 /*!
  * ExtSinglePageOpener
  * Part of the ExtHelpers project
- * @version  v1.5.2
+ * @version  v1.6.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
  * Issues:   http://github.com/gerrproger/ext-helpers/issues
  */
-; (function (root, factory) {
-  "use strict";
+(function (root, factory) {
+  'use strict';
 
-  if(typeof module === 'object' && typeof module.exports === 'object') {
+  if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = factory(root, document);
-  } else if(typeof define === 'function' && define.amd) {
+  } else if (typeof define === 'function' && define.amd) {
     define(null, function () {
       factory(root, document);
     });
   } else {
     root.ExtSinglePageOpener = factory(root, document);
   }
-}(typeof window !== 'undefined' ? window : this, function (window, document) {
-  "use strict";
+})(typeof window !== 'undefined' ? window : this, function (window, document) {
+  'use strict';
 
   class ExtSinglePageOpener {
     constructor() {
@@ -33,7 +32,7 @@
 
     _prepareBackground() {
       chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if(!request.extSinglePageOpener) {
+        if (!request.extSinglePageOpener) {
           return;
         }
         this._openBackground(request.extSinglePageOpener, sendResponse);
@@ -47,18 +46,18 @@
       const tabId = this.pages.get(splittedUrl[0]);
       const updateObj = { active: true };
 
-      if(!tabId) {
+      if (!tabId) {
         this._openNewTab(opts, callback);
         return;
       }
 
       chrome.tabs.get(tabId, (tab) => {
-        if(chrome.runtime.lastError || !tab) {
+        if (chrome.runtime.lastError || !tab) {
           this._openNewTab(opts, callback);
           return;
         }
 
-        if(splittedUrl.length > 1) {
+        if (splittedUrl.length > 1) {
           updateObj.url = url;
         }
         chrome.windows.update(tab.windowId, { focused: true });
@@ -68,7 +67,7 @@
 
     _openContent(opts, callback) {
       chrome.runtime.sendMessage({ extSinglePageOpener: opts }, (tab) => {
-        if(chrome.runtime.lastError || !tab) {
+        if (chrome.runtime.lastError || !tab) {
           throw new Error('ExtSinglePageOpener should also be initilized in the background page script!');
         }
         callback.call(window, tab);
@@ -82,7 +81,7 @@
         callback.call(window, tab);
       };
 
-      if(opts.type) {
+      if (opts.type) {
         chrome.windows.create({ ...opts, focused: true, url }, (wind) => {
           tabLoaded(wind.tabs[0]);
         });
@@ -90,7 +89,7 @@
       }
 
       chrome.windows.getCurrent({}, (window) => {
-        if(window) {
+        if (window) {
           chrome.windows.update(window.id, { focused: true });
           chrome.tabs.create({ url }, tabLoaded);
           return;
@@ -112,11 +111,11 @@
       return url.split(/\?|#/);
     }
 
-    open(opts, callback = () => { }) {
-      if(typeof callback !== 'function') {
+    open(opts, callback = () => {}) {
+      if (typeof callback !== 'function') {
         throw new Error('Callback should be a function!');
       }
-      if(!opts || !(typeof opts === 'string' || (typeof opts === 'object' && typeof opts.url === 'string'))) {
+      if (!opts || !(typeof opts === 'string' || (typeof opts === 'object' && typeof opts.url === 'string'))) {
         throw new Error('URL or settings object with URL string is not provided!');
       }
 
@@ -125,4 +124,4 @@
   }
 
   return ExtSinglePageOpener;
-}));
+});
