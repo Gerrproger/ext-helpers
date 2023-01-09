@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.6.0
+ * @version  v1.7.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -43,7 +43,6 @@
     }
 
     _background(ignore, callback) {
-      const constructRegExp = (str) => new RegExp(`^${str.replace(/\?/g, '.').replace(/\*\.?/g, '.*').replace(/\//g, '/').replace(/\./g, '.')}$`);
       const inject = (id, injectOpts) => {
         const doInject = (type) => {
           if (!injectOpts.files[type]) {
@@ -61,7 +60,9 @@
         chrome.tabs.executeScript(
           id,
           {
-            code: `window.extAutoInjectInfo = ${JSON.stringify(this.constructor.info)};`,
+            code: `window.extAutoInjectInfo=${JSON.stringify(this.constructor.info)};window.extAutoInjectMatches=${JSON.stringify(injectOpts.matches)};`,
+            allFrames: injectOpts.allFrames,
+            matchAboutBlank: injectOpts.matchAboutBlank,
           },
           () => {
             if (chrome.runtime.lastError) {
@@ -84,6 +85,7 @@
         const injectOpts = {
           allFrames: cs.all_frames,
           matchAboutBlank: cs.match_about_blank,
+          matches: cs.matches,
           files: {},
         };
         const doCheck = (type) => {
@@ -114,7 +116,7 @@
                 cs.exclude_matches && (toIgnore = toIgnore.concat(cs.exclude_matches));
                 cs.exclude_globs && (toIgnore = toIgnore.concat(cs.exclude_globs));
                 const ignored = toIgnore.some((ignore) => {
-                  ignore = constructRegExp(ignore);
+                  ignore = this.constructRegExp(ignore);
                   if (tab.url.match(ignore)) {
                     return true;
                   }
@@ -125,7 +127,7 @@
 
                 if (cs.include_globs) {
                   const included = cs.include_globs.some((include) => {
-                    include = constructRegExp(include);
+                    include = this.constructRegExp(include);
                     if (tab.url.match(include)) {
                       return true;
                     }
@@ -153,7 +155,7 @@
 
       let ignoring = typeof ignore === 'object' || typeof ignore === 'string' ? (Array.isArray(ignore) ? ignore : [ignore]) : [];
       ignoring = ignoring.map((ignore) => {
-        return typeof ignore === 'string' ? constructRegExp(ignore) : ignore;
+        return typeof ignore === 'string' ? this.constructRegExp(ignore) : ignore;
       });
 
       chrome.runtime.onInstalled.addListener((details) => {
@@ -181,8 +183,27 @@
       }, 0);
     }
 
+    static get pageMathes() {
+      const url = window.location.href;
+      const matches = window.extAutoInjectMatches;
+      if (!matches) {
+        return true;
+      }
+      return matches.some((match) => {
+        if (match === '<all_urls>') {
+          return true;
+        }
+        const matcher = this.constructRegExp(match);
+        return !!url.match(matcher);
+      });
+    }
+
     static get info() {
       return window.extAutoInjectInfo;
+    }
+
+    static constructRegExp(str) {
+      return new RegExp(`^${str.replace(/\?/g, '.').replace(/\*\.?/g, '.*').replace(/\//g, '/').replace(/\./g, '.')}$`);
     }
   }
 

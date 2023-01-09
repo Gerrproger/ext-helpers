@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.6.0
+ * @version  v1.7.0
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -235,7 +235,7 @@
         const pathArray = path.split(/\./g);
         const pathLength = pathArray.length - 1;
         if (!pathLength) {
-          if (!this.data[pathArray[0]]) {
+          if (!this.data.hasOwnProperty(pathArray[0])) {
             if (skipNonexistent) {
               this._callback(callback);
               return this.api;
