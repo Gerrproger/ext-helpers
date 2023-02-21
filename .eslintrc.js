@@ -3,6 +3,7 @@ module.exports = {
   env: {
     es6: true,
     browser: true,
+    node: true,
   },
   globals: {
     chrome: true,
@@ -12,9 +13,9 @@ module.exports = {
   },
   extends: ['eslint:recommended'],
   rules: {
-    indent: 'off',
-    semi: ['error', 'always', { omitLastInOneLineBlock: true }],
-    quotes: ['warn', 'single'],
+    'indent': 'off',
+    'semi': ['error', 'always', { omitLastInOneLineBlock: true }],
+    'quotes': ['warn', 'single'],
     'template-curly-spacing': 'off',
     'no-prototype-builtins': 'off',
     'quote-props': ['warn', 'consistent-as-needed'],
