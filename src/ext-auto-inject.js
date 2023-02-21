@@ -1,15 +1,15 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.7.0
+ * @version  v1.7.1
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
  * Issues:   http://github.com/gerrproger/ext-helpers/issues
  */
 (function (root, factory) {
+  /*eslint-disable */
   'use strict';
-
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = factory(root, document);
   } else if (typeof define === 'function' && define.amd) {
@@ -20,6 +20,7 @@
     root.ExtAutoInject = factory(root, document);
   }
 })(typeof window !== 'undefined' ? window : this, function (window, document) {
+  /*eslint-enable */
   'use strict';
 
   class ExtAutoInject {
