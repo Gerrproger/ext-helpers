@@ -12,7 +12,7 @@
     "build": "rimraf dist && esbuild --platform=browser --target=es2020 --minify --outdir=dist --out-extension:.js=.min.js src/ext-active-tab-state.js src/ext-auto-inject.js src/ext-single-page-opener.js src/ext-storage-manager.js"
   },
   "devDependencies": {
-    "esbuild": "^0.17.10",
+    "esbuild": "^0.19.0",
     "eslint": "^8.34.0",
     "rimraf": "^5.0.0"
   }
