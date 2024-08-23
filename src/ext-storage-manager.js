@@ -1,7 +1,7 @@
 /*!
  * ExtStorageManager
  * Part of the ExtHelpers project
- * @version  v1.7.1
+ * @version  v1.7.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -30,7 +30,10 @@
           if (!this.initialized) {
             throw new StorageError('Storage is not initialized yet!');
           }
-          return arguments[0].apply(this, Array.prototype.slice.call(arguments, 1));
+          return arguments[0].apply(
+            this,
+            Array.prototype.slice.call(arguments, 1)
+          );
         };
         this.name = name;
         this.callback = callback;
@@ -52,12 +55,15 @@
           limits: this.limits,
         };
         this.nativeStorage.get(this._checkStorage.bind(this));
-        this.nativeStorage.onChanged.addListener(this._updateStorage.bind(this));
+        this.nativeStorage.onChanged.addListener(
+          this._updateStorage.bind(this)
+        );
       }
 
       _checkStorage(opts) {
         const merge = this._extend(opts, this.defData);
-        const errorMessage = chrome.runtime.lastError && chrome.runtime.lastError.message;
+        const errorMessage =
+          chrome.runtime.lastError && chrome.runtime.lastError.message;
         this.data = merge.object;
         if (merge.changed.length) {
           const changed = {};
@@ -131,7 +137,10 @@
             changed.push(key);
             return;
           }
-          if (this._isObject(opts[key].newValue) && this._isObject(this.data[key])) {
+          if (
+            this._isObject(opts[key].newValue) &&
+            this._isObject(this.data[key])
+          ) {
             iter(opts[key].newValue, this.data[key], key);
           } else if (opts[key].newValue !== this.data[key]) {
             changed.push(key);
@@ -140,7 +149,10 @@
         });
         changed.forEach((path) => {
           this.onUpdateCalls.forEach((caller) => {
-            if (new RegExp(`^${caller[0].replace(/\./g, '\\.')}`).test(path) || new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])) {
+            if (
+              new RegExp(`^${caller[0].replace(/\./g, '\\.')}`).test(path) ||
+              new RegExp(`^${path.replace(/\./g, '\\.')}`).test(caller[0])
+            ) {
               caller[1].call(window, this.get(caller[0]));
             }
           });
@@ -149,10 +161,16 @@
 
       _replaceStorage(newData, callback) {
         newData = this._copyObject(newData);
-        const toRemove = Object.keys(this.data).filter((key) => !newData.hasOwnProperty(key));
+        const toRemove = Object.keys(this.data).filter(
+          (key) => !newData.hasOwnProperty(key)
+        );
         this.data = newData;
         this.skip = true;
-        toRemove.length && this.nativeStorage.remove(toRemove, this._callback.bind(this, callback));
+        toRemove.length &&
+          this.nativeStorage.remove(
+            toRemove,
+            this._callback.bind(this, callback)
+          );
         this.nativeStorage.set(this.data, () => {
           this.skip = false;
           this._callback(callback, chrome.runtime.lastError);
@@ -180,7 +198,11 @@
             return true;
           }
         });
-        return notFound ? undefined : this._isObject(temp) ? this._copyObject(temp) : temp;
+        return notFound
+          ? undefined
+          : this._isObject(temp)
+          ? this._copyObject(temp)
+          : temp;
       }
 
       set(path, value, callback) {
@@ -193,7 +215,9 @@
         this._isObject(value) && (value = this._copyObject(value));
         if (!path) {
           if (!this._isObject(value)) {
-            throw new StorageError('Could not store a non-object in the storage root!');
+            throw new StorageError(
+              'Could not store a non-object in the storage root!'
+            );
           }
           this._replaceStorage(value, callback);
           return this.api;
@@ -215,7 +239,10 @@
         if (error) {
           throw new StorageError('One of the path nestings is not an object!');
         }
-        this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] }, this._callback.bind(this, callback));
+        this.nativeStorage.set(
+          { [pathArray[0]]: this.data[pathArray[0]] },
+          this._callback.bind(this, callback)
+        );
         return this.api;
       }
 
@@ -227,7 +254,10 @@
         if (!path) {
           throw new StorageError('Path is not passed!');
         }
-        if (skipNonexistent !== undefined && typeof skipNonexistent !== 'boolean') {
+        if (
+          skipNonexistent !== undefined &&
+          typeof skipNonexistent !== 'boolean'
+        ) {
           throw new StorageError('SkipNonexistent should be a boolean!');
         }
         if (callback !== undefined && typeof callback !== 'function') {
@@ -244,7 +274,10 @@
             throw new StorageError('Passed path does not exists!');
           }
           delete this.data[pathArray[0]];
-          this.nativeStorage.remove(pathArray[0], this._callback.bind(this, callback));
+          this.nativeStorage.remove(
+            pathArray[0],
+            this._callback.bind(this, callback)
+          );
           return this.api;
         }
         let temp = this.data;
@@ -254,12 +287,17 @@
               return true;
             } else {
               delete temp[key];
-              this.nativeStorage.set({ [pathArray[0]]: this.data[pathArray[0]] }, this._callback.bind(this, callback));
+              this.nativeStorage.set(
+                { [pathArray[0]]: this.data[pathArray[0]] },
+                this._callback.bind(this, callback)
+              );
             }
           } else if (this._isObject(temp[key])) {
             temp = temp[key];
           } else {
-            throw new StorageError('One of the path nestings is not an object!');
+            throw new StorageError(
+              'One of the path nestings is not an object!'
+            );
           }
         });
         if (error) {
@@ -291,7 +329,9 @@
         if (namespace && typeof namespace !== 'string') {
           throw new StorageError('Namespace should be a string or undefined!');
         }
-        this.onUpdateCalls = namespace ? this.onUpdateCalls.filter((caller) => caller[2] !== namespace) : [];
+        this.onUpdateCalls = namespace
+          ? this.onUpdateCalls.filter((caller) => caller[2] !== namespace)
+          : [];
         return this.api;
       }
 
@@ -319,7 +359,8 @@
           throw new StorageError('Callback function is not passed!');
         }
         this.nativeStorage.getBytesInUse(key || null, (bytes) => {
-          const limit = this.nativeStorage[`QUOTA_BYTES${key ? '_PER_ITEM' : ''}`];
+          const limit =
+            this.nativeStorage[`QUOTA_BYTES${key ? '_PER_ITEM' : ''}`];
           callback.call(window, bytes, limit);
         });
         return this.api;
@@ -328,9 +369,12 @@
       get limits() {
         return {
           maxItems: this.nativeStorage.MAX_ITEMS,
-          maxSustainedWriteOperationsPerMinute: this.nativeStorage.MAX_SUSTAINED_WRITE_OPERATIONS_PER_MINUTE,
-          maxWriteOperationsPerHour: this.nativeStorage.MAX_WRITE_OPERATIONS_PER_HOUR,
-          maxWriteOperationsPerMinute: this.nativeStorage.MAX_WRITE_OPERATIONS_PER_MINUTE,
+          maxSustainedWriteOperationsPerMinute:
+            this.nativeStorage.MAX_SUSTAINED_WRITE_OPERATIONS_PER_MINUTE,
+          maxWriteOperationsPerHour:
+            this.nativeStorage.MAX_WRITE_OPERATIONS_PER_HOUR,
+          maxWriteOperationsPerMinute:
+            this.nativeStorage.MAX_WRITE_OPERATIONS_PER_MINUTE,
           quotaBytes: this.nativeStorage.QUOTA_BYTES,
           quotaBytesPerItem: this.nativeStorage.QUOTA_BYTES_PER_ITEM,
         };

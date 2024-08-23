@@ -1,6 +1,6 @@
 {
   "name": "ext-helpers",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "author": "Gerrproger",
   "license": "MIT",
   "description": "A set of libraries for convenient browser extensions development",

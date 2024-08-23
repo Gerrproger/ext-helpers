@@ -1,7 +1,7 @@
 /*!
  * ExtActiveTabState
  * Part of the ExtHelpers project
- * @version  v1.7.1
+ * @version  v1.7.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -25,7 +25,10 @@
 
   class ExtActiveTabState {
     constructor() {
-      this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
+      this.isBackgroundScript = !!(
+        chrome.extension.getBackgroundPage &&
+        chrome.extension.getBackgroundPage() === window
+      );
       this.callbacksNoState = [];
       this.callbacks = {
         default: [],
@@ -47,11 +50,23 @@
     }
 
     _processSubscriptions(type, namespace, callback) {
-      if (type === 'subscribe' && typeof callback !== 'function' && this.isBackgroundScript) {
+      if (
+        type === 'subscribe' &&
+        typeof callback !== 'function' &&
+        this.isBackgroundScript
+      ) {
         throw new Error('Callback should be a function!');
       }
-      if (namespace && typeof namespace !== 'string' && (!this.isBackgroundScript || typeof namespace !== 'boolean')) {
-        throw new Error(`Namespace should be a string${this.isBackgroundScript ? ' or a a boolean' : ''}!`);
+      if (
+        namespace &&
+        typeof namespace !== 'string' &&
+        (!this.isBackgroundScript || typeof namespace !== 'boolean')
+      ) {
+        throw new Error(
+          `Namespace should be a string${
+            this.isBackgroundScript ? ' or a a boolean' : ''
+          }!`
+        );
       }
 
       if (!namespace && this.isBackgroundScript) {
@@ -96,7 +111,11 @@
         });
       };
       const checkUpdate = (tabId, info, tab) => {
-        if (info.status !== 'complete' || tab.windowId !== lastWindId || !tab.active) {
+        if (
+          info.status !== 'complete' ||
+          tab.windowId !== lastWindId ||
+          !tab.active
+        ) {
           return;
         }
         processCallbacks(tab);
@@ -114,19 +133,23 @@
         });
       };
       const requestState = (tab, namespace, then) => {
-        chrome.tabs.sendMessage(tab.id, { extActiveTabState: { namespace } }, (response) => {
-          if (chrome.runtime.lastError) {
-            then();
-            switch (chrome.runtime.lastError.message) {
-              case 'Could not establish connection. Receiving end does not exist.':
-              case 'The message port closed before a response was received.':
-                return;
-              default:
-                throw new Error(chrome.runtime.lastError.message);
+        chrome.tabs.sendMessage(
+          tab.id,
+          { extActiveTabState: { namespace } },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              then();
+              switch (chrome.runtime.lastError.message) {
+                case 'Could not establish connection. Receiving end does not exist.':
+                case 'The message port closed before a response was received.':
+                  return;
+                default:
+                  throw new Error(chrome.runtime.lastError.message);
+              }
             }
+            then(response.extActiveTabState.response);
           }
-          then(response.extActiveTabState.response);
-        });
+        );
       };
 
       checkTab();
@@ -151,11 +174,15 @@
         if (!request.extActiveTabState) {
           return;
         }
-        request.extActiveTabState.namespace && (namespace = request.extActiveTabState.namespace);
+        request.extActiveTabState.namespace &&
+          (namespace = request.extActiveTabState.namespace);
 
         const response = this.callbacks[namespace]
           ? this.callbacks[namespace].reduce((resp, callback) => {
-              const curr = typeof callback === 'function' ? callback.call(window) : callback;
+              const curr =
+                typeof callback === 'function'
+                  ? callback.call(window)
+                  : callback;
               return Object.assign(resp, curr);
             }, {})
           : {};

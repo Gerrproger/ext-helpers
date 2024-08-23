@@ -1,7 +1,7 @@
 /*!
  * ExtAutoInject
  * Part of the ExtHelpers project
- * @version  v1.7.1
+ * @version  v1.7.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -25,21 +25,33 @@
 
   class ExtAutoInject {
     constructor(ignore, callback) {
-      this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
+      this.isBackgroundScript = !!(
+        chrome.extension.getBackgroundPage &&
+        chrome.extension.getBackgroundPage() === window
+      );
       this.manifest = chrome.runtime.getManifest();
       !this.isBackgroundScript && (callback = ignore);
       if (callback && typeof callback !== 'function') {
         throw new Error('Callback should be a function!');
       }
-      if (this.isBackgroundScript && ignore && typeof ignore !== 'string' && typeof ignore !== 'object') {
-        throw new Error('Ignore parameter should be a sting (match pattern) or a regular expression or an array of strings/expressions!');
+      if (
+        this.isBackgroundScript &&
+        ignore &&
+        typeof ignore !== 'string' &&
+        typeof ignore !== 'object'
+      ) {
+        throw new Error(
+          'Ignore parameter should be a sting (match pattern) or a regular expression or an array of strings/expressions!'
+        );
       }
       return new Promise((resolve) => {
         const callbackWrap = (res) => {
           callback && callback.call(window, res);
           resolve(res);
         };
-        this.isBackgroundScript ? this._background(ignore, callbackWrap) : this._content(callbackWrap);
+        this.isBackgroundScript
+          ? this._background(ignore, callbackWrap)
+          : this._content(callbackWrap);
       });
     }
 
@@ -61,7 +73,11 @@
         chrome.tabs.executeScript(
           id,
           {
-            code: `window.extAutoInjectInfo=${JSON.stringify(this.constructor.info)};window.extAutoInjectMatches=${JSON.stringify(injectOpts.matches)};`,
+            code: `window.extAutoInjectInfo=${JSON.stringify(
+              this.constructor.info
+            )};window.extAutoInjectMatches=${JSON.stringify(
+              injectOpts.matches
+            )};`,
             allFrames: injectOpts.allFrames,
             matchAboutBlank: injectOpts.matchAboutBlank,
           },
@@ -114,8 +130,10 @@
             tabs &&
               tabs.forEach((tab) => {
                 let toIgnore = [];
-                cs.exclude_matches && (toIgnore = toIgnore.concat(cs.exclude_matches));
-                cs.exclude_globs && (toIgnore = toIgnore.concat(cs.exclude_globs));
+                cs.exclude_matches &&
+                  (toIgnore = toIgnore.concat(cs.exclude_matches));
+                cs.exclude_globs &&
+                  (toIgnore = toIgnore.concat(cs.exclude_globs));
                 const ignored = toIgnore.some((ignore) => {
                   ignore = this.constructRegExp(ignore);
                   if (tab.url.match(ignore)) {
@@ -154,9 +172,16 @@
         ignore !== false && queryTabs();
       };
 
-      let ignoring = typeof ignore === 'object' || typeof ignore === 'string' ? (Array.isArray(ignore) ? ignore : [ignore]) : [];
+      let ignoring =
+        typeof ignore === 'object' || typeof ignore === 'string'
+          ? Array.isArray(ignore)
+            ? ignore
+            : [ignore]
+          : [];
       ignoring = ignoring.map((ignore) => {
-        return typeof ignore === 'string' ? this.constructRegExp(ignore) : ignore;
+        return typeof ignore === 'string'
+          ? this.constructRegExp(ignore)
+          : ignore;
       });
 
       chrome.runtime.onInstalled.addListener((details) => {
@@ -184,7 +209,7 @@
       }, 0);
     }
 
-    static get pageMathes() {
+    static get pageMatches() {
       const url = window.location.href;
       const matches = window.extAutoInjectMatches;
       if (!matches) {
@@ -204,7 +229,13 @@
     }
 
     static constructRegExp(str) {
-      return new RegExp(`^${str.replace(/\?/g, '.').replace(/\*\.?/g, '.*').replace(/\//g, '/').replace(/\./g, '.')}$`);
+      return new RegExp(
+        `^${str
+          .replace(/\?/g, '.')
+          .replace(/\*\.?/g, '.*')
+          .replace(/\//g, '/')
+          .replace(/\./g, '.')}$`
+      );
     }
   }
 

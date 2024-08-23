@@ -1,7 +1,7 @@
 /*!
  * ExtSinglePageOpener
  * Part of the ExtHelpers project
- * @version  v1.7.1
+ * @version  v1.7.2
  * @author   Gerrproger
  * @license  MIT License
  * Repo:     http://github.com/gerrproger/ext-helpers
@@ -25,7 +25,10 @@
 
   class ExtSinglePageOpener {
     constructor() {
-      this.isBackgroundScript = !!(chrome.extension.getBackgroundPage && chrome.extension.getBackgroundPage() === window);
+      this.isBackgroundScript = !!(
+        chrome.extension.getBackgroundPage &&
+        chrome.extension.getBackgroundPage() === window
+      );
       this.pages = new Map();
 
       this.isBackgroundScript && this._prepareBackground();
@@ -69,7 +72,9 @@
     _openContent(opts, callback) {
       chrome.runtime.sendMessage({ extSinglePageOpener: opts }, (tab) => {
         if (chrome.runtime.lastError || !tab) {
-          throw new Error('ExtSinglePageOpener should also be initilized in the background page script!');
+          throw new Error(
+            'ExtSinglePageOpener should also be initialized in the background page script!'
+          );
         }
         callback.call(window, tab);
       });
@@ -116,11 +121,21 @@
       if (typeof callback !== 'function') {
         throw new Error('Callback should be a function!');
       }
-      if (!opts || !(typeof opts === 'string' || (typeof opts === 'object' && typeof opts.url === 'string'))) {
-        throw new Error('URL or settings object with URL string is not provided!');
+      if (
+        !opts ||
+        !(
+          typeof opts === 'string' ||
+          (typeof opts === 'object' && typeof opts.url === 'string')
+        )
+      ) {
+        throw new Error(
+          'URL or settings object with URL string is not provided!'
+        );
       }
 
-      this.isBackgroundScript ? this._openBackground(opts, callback) : this._openContent(opts, callback);
+      this.isBackgroundScript
+        ? this._openBackground(opts, callback)
+        : this._openContent(opts, callback);
     }
   }
 
